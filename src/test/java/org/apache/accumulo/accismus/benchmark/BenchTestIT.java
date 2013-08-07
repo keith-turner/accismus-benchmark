@@ -17,22 +17,26 @@
 package org.apache.accumulo.accismus.benchmark;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.accumulo.accismus.api.Column;
 import org.apache.accumulo.accismus.api.ColumnIterator;
 import org.apache.accumulo.accismus.api.Configuration;
-import org.apache.accumulo.accismus.api.Transaction;
 import org.apache.accumulo.accismus.api.Operations;
 import org.apache.accumulo.accismus.api.RowIterator;
 import org.apache.accumulo.accismus.api.ScannerConfiguration;
+import org.apache.accumulo.accismus.api.Transaction;
 import org.apache.accumulo.accismus.impl.ByteUtil;
 import org.apache.accumulo.accismus.impl.Constants;
+import org.apache.accumulo.accismus.impl.Constants.Props;
 import org.apache.accumulo.accismus.impl.OracleServer;
 import org.apache.accumulo.accismus.impl.TransactionImpl;
 import org.apache.accumulo.accismus.impl.Worker;
@@ -45,6 +49,7 @@ import org.apache.accumulo.core.data.ArrayByteSequence;
 import org.apache.accumulo.core.data.ByteSequence;
 import org.apache.accumulo.core.security.Authorizations;
 import org.apache.accumulo.minicluster.MiniAccumuloInstance;
+import org.apache.commons.io.FileUtils;
 import org.apache.zookeeper.ZooKeeper;
 import org.junit.After;
 import org.junit.Assert;
@@ -137,6 +142,7 @@ public class BenchTestIT {
     runWorker();
 
     verify(expected);
+    verifyMR();
     
     // update a document
     ByteSequence uri = expected.keySet().iterator().next();
@@ -154,6 +160,28 @@ public class BenchTestIT {
     verify(expected);
     
     runWorker();
+  }
+
+  private void verifyMR() throws Exception {
+    
+    // TODO use junit tmp file
+    String propsFile = FileUtils.getTempDirectoryPath() + File.separator + "ab_verify" + UUID.randomUUID().toString() + ".props";
+    String outputDir = FileUtils.getTempDirectoryPath() + File.separator + "ab_verify" + UUID.randomUUID().toString();
+    
+    // TODO use public props
+    Properties props = new Properties();
+    props.setProperty(Props.ZOOKEEPER_CONNECT, instance.getZooKeepers());
+    props.setProperty(Props.ZOOKEEPER_ROOT, zkn);
+    props.setProperty(Props.ZOOKEEPER_TIMEOUT, "30000");
+    props.setProperty(Props.ACCUMULO_INSTANCE, instance.getInstanceName());
+    props.setProperty(Props.ACCUMULO_USER, "root");
+    props.setProperty(Props.ACCUMULO_PASSWORD, secret);
+    
+    FileWriter fw = new FileWriter(propsFile);
+    props.store(fw, "");
+    fw.close();
+    
+    Verify.main(new String[] {"-D", "mapred.job.tracker=local", "-D", "fs.default.name=file:///", propsFile, outputDir});
   }
 
   /**
