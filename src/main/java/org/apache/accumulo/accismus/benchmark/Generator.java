@@ -19,9 +19,10 @@ package org.apache.accumulo.accismus.benchmark;
 import java.io.File;
 import java.util.Random;
 
-import org.apache.accumulo.accismus.Column;
-import org.apache.accumulo.accismus.Configuration;
-import org.apache.accumulo.accismus.Transaction;
+import org.apache.accumulo.accismus.api.Column;
+import org.apache.accumulo.accismus.api.Configuration;
+import org.apache.accumulo.accismus.api.Transaction;
+import org.apache.accumulo.accismus.impl.TransactionImpl;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -39,7 +40,7 @@ public class Generator extends Configured implements Tool {
    * @throws Exception
    */
   public static void insert(Configuration config, Document doc) throws Exception {
-    Transaction tx = new Transaction(config);
+    Transaction tx = new TransactionImpl(config);
     
     tx.set(doc.getUrl(), contetCol, doc.getContent());
 

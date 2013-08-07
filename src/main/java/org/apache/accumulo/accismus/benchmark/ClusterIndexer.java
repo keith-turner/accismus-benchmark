@@ -22,9 +22,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.accumulo.accismus.Column;
-import org.apache.accumulo.accismus.Observer;
-import org.apache.accumulo.accismus.Transaction;
+import org.apache.accumulo.accismus.api.Column;
+import org.apache.accumulo.accismus.api.Transaction;
+import org.apache.accumulo.accismus.api.Observer;
 import org.apache.accumulo.core.data.ArrayByteSequence;
 import org.apache.accumulo.core.data.ByteSequence;
 

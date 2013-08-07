@@ -24,17 +24,18 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.accumulo.accismus.Column;
-import org.apache.accumulo.accismus.ColumnIterator;
-import org.apache.accumulo.accismus.Configuration;
-import org.apache.accumulo.accismus.Constants;
-import org.apache.accumulo.accismus.Operations;
-import org.apache.accumulo.accismus.RowIterator;
-import org.apache.accumulo.accismus.ScannerConfiguration;
-import org.apache.accumulo.accismus.Transaction;
-import org.apache.accumulo.accismus.Worker;
+import org.apache.accumulo.accismus.api.Column;
+import org.apache.accumulo.accismus.api.ColumnIterator;
+import org.apache.accumulo.accismus.api.Configuration;
+import org.apache.accumulo.accismus.api.Transaction;
+import org.apache.accumulo.accismus.api.Operations;
+import org.apache.accumulo.accismus.api.RowIterator;
+import org.apache.accumulo.accismus.api.ScannerConfiguration;
 import org.apache.accumulo.accismus.impl.ByteUtil;
+import org.apache.accumulo.accismus.impl.Constants;
 import org.apache.accumulo.accismus.impl.OracleServer;
+import org.apache.accumulo.accismus.impl.TransactionImpl;
+import org.apache.accumulo.accismus.impl.Worker;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.client.Scanner;
@@ -101,6 +102,7 @@ public class BenchTestIT {
     zkn = "/test" + next.getAndIncrement();
     
     Operations.initialize(conn, zkn, table, getObservers());
+
     config = new Configuration(zk, zkn, conn);
     
     oserver = new OracleServer(config);
@@ -159,7 +161,7 @@ public class BenchTestIT {
    * 
    */
   private void verify(Map<ByteSequence,Document> expected) throws Exception {
-    Transaction tx1 = new Transaction(config);
+    Transaction tx1 = new TransactionImpl(config);
     
     RowIterator riter = tx1.get(new ScannerConfiguration());
     
