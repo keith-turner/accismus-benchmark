@@ -18,11 +18,13 @@ package org.apache.accumulo.accismus.benchmark;
 
 import java.io.File;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.accumulo.accismus.api.AccismusProperties;
 import org.apache.accumulo.accismus.api.Column;
-import org.apache.accumulo.accismus.api.Configuration;
-import org.apache.accumulo.accismus.api.Transaction;
-import org.apache.accumulo.accismus.impl.TransactionImpl;
+import org.apache.accumulo.accismus.api.LoaderTaskFactory;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -33,36 +35,31 @@ import org.apache.hadoop.util.ToolRunner;
 public class Generator extends Configured implements Tool {
   
   public static final Column contetCol = new Column("doc", "content");
-  
-  /**
-   * @param config
-   * @param doc
-   * @throws Exception
-   */
-  public static void insert(Configuration config, Document doc) throws Exception {
-    Transaction tx = new TransactionImpl(config);
     
-    tx.set(doc.getUrl(), contetCol, doc.getContent());
-
-    tx.commit();
-  }
-  
   public static void main(String[] args) throws Exception {
     ToolRunner.run(new Generator(), args);
   }
   
   @Override
   public int run(String[] args) throws Exception {
-    Configuration config = new Configuration(new File(args[0]));
     
+    ExecutorService executor = Executors.newFixedThreadPool(10);
+    LoaderTaskFactory lwrapper = new LoaderTaskFactory(new AccismusProperties(new File(args[0])));
+
     int num = Integer.parseInt(args[1]);
     
     Random rand = new Random();
 
     for (int i = 0; i < num; i++) {
       Document doc = new Document(rand);
-      Generator.insert(config, doc);
+      executor.submit(lwrapper.newLoadTask(new DocumentLoader(doc)));
     }
+    
+    executor.shutdown();
+    while (!executor.isShutdown()) {
+      executor.awaitTermination(1, TimeUnit.SECONDS);
+    }
+
     return 0;
   }
 }

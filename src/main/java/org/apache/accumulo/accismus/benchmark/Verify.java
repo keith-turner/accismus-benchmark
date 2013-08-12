@@ -91,8 +91,6 @@ public class Verify extends Configured implements Tool {
       int docCount = 0;
       int indexCount = 0;
       
-      System.out.println("key " + key);
-
       for (Text text : values) {
         if (text.equals(D)) {
           docCount++;

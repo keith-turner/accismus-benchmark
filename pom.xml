@@ -88,11 +88,10 @@
       <version>2.4</version>
       <scope>test</scope>
     </dependency>
-        <dependency>
+    <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-core</artifactId>
       <version>1.0.4</version>
-      <scope>test</scope>
     </dependency>
     
   </dependencies>

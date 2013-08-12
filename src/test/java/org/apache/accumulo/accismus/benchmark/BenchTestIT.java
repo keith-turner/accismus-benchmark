@@ -22,21 +22,21 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.accumulo.accismus.api.AccismusProperties;
 import org.apache.accumulo.accismus.api.Column;
 import org.apache.accumulo.accismus.api.ColumnIterator;
-import org.apache.accumulo.accismus.api.Configuration;
+import org.apache.accumulo.accismus.api.LoaderTaskFactory;
 import org.apache.accumulo.accismus.api.Operations;
 import org.apache.accumulo.accismus.api.RowIterator;
 import org.apache.accumulo.accismus.api.ScannerConfiguration;
 import org.apache.accumulo.accismus.api.Transaction;
 import org.apache.accumulo.accismus.impl.ByteUtil;
+import org.apache.accumulo.accismus.impl.Configuration;
 import org.apache.accumulo.accismus.impl.Constants;
-import org.apache.accumulo.accismus.impl.Constants.Props;
 import org.apache.accumulo.accismus.impl.OracleServer;
 import org.apache.accumulo.accismus.impl.TransactionImpl;
 import org.apache.accumulo.accismus.impl.Worker;
@@ -80,6 +80,8 @@ public class BenchTestIT {
   protected OracleServer oserver;
   protected String zkn;
   
+  protected AccismusProperties connectionProps;
+
   protected void runWorker() throws Exception, TableNotFoundException {
     Worker worker = new Worker(config);
     worker.processUpdates();
@@ -112,6 +114,8 @@ public class BenchTestIT {
     
     oserver = new OracleServer(config);
     oserver.start();
+    
+    connectionProps = new AccismusProperties(instance.getZooKeepers(), 30000, zkn, instance.getInstanceName(), "root", secret);
   }
   
   @After
@@ -129,6 +133,8 @@ public class BenchTestIT {
   @Test
   public void test1() throws Exception {
     
+    LoaderTaskFactory lwrapper = new LoaderTaskFactory(connectionProps);
+
     Map<ByteSequence,Document> expected = new HashMap<ByteSequence,Document>();
 
     Random rand = new Random();
@@ -136,7 +142,8 @@ public class BenchTestIT {
     for (int i = 0; i < 10; i++) {
       Document doc = new Document(rand);
       expected.put(doc.getUrl(), doc);
-      Generator.insert(config, doc);
+      lwrapper.newLoadTask(new DocumentLoader(doc)).run();
+      ;
     }
     
     runWorker();
@@ -151,7 +158,7 @@ public class BenchTestIT {
     r.nextBytes(newContent);
     Document newDoc = new Document(uri, new ArrayByteSequence(newContent));
     
-    Generator.insert(config, newDoc);
+    lwrapper.newLoadTask(new DocumentLoader(newDoc)).run();
 
     expected.put(uri, newDoc);
 
@@ -168,17 +175,8 @@ public class BenchTestIT {
     String propsFile = FileUtils.getTempDirectoryPath() + File.separator + "ab_verify" + UUID.randomUUID().toString() + ".props";
     String outputDir = FileUtils.getTempDirectoryPath() + File.separator + "ab_verify" + UUID.randomUUID().toString();
     
-    // TODO use public props
-    Properties props = new Properties();
-    props.setProperty(Props.ZOOKEEPER_CONNECT, instance.getZooKeepers());
-    props.setProperty(Props.ZOOKEEPER_ROOT, zkn);
-    props.setProperty(Props.ZOOKEEPER_TIMEOUT, "30000");
-    props.setProperty(Props.ACCUMULO_INSTANCE, instance.getInstanceName());
-    props.setProperty(Props.ACCUMULO_USER, "root");
-    props.setProperty(Props.ACCUMULO_PASSWORD, secret);
-    
     FileWriter fw = new FileWriter(propsFile);
-    props.store(fw, "");
+    connectionProps.store(fw, "");
     fw.close();
     
     Verify.main(new String[] {"-D", "mapred.job.tracker=local", "-D", "fs.default.name=file:///", propsFile, outputDir});
