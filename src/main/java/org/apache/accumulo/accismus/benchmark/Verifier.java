@@ -16,13 +16,13 @@
  */
 package org.apache.accumulo.accismus.benchmark;
 
-import java.io.FileReader;
+import java.io.File;
 import java.io.IOException;
 import java.util.Map.Entry;
-import java.util.Properties;
 
 import org.apache.accumulo.accismus.api.Column;
 import org.apache.accumulo.accismus.api.ColumnIterator;
+import org.apache.accumulo.accismus.api.config.AccismusProperties;
 import org.apache.accumulo.accismus.api.mapreduce.AccismusInputFormat;
 import org.apache.accumulo.core.data.ArrayByteSequence;
 import org.apache.accumulo.core.data.ByteSequence;
@@ -40,7 +40,7 @@ import org.apache.hadoop.util.ToolRunner;
 /**
  * map redice job that can verify index is consistent
  */
-public class Verify extends Configured implements Tool {
+public class Verifier extends Configured implements Tool {
   
   private static ByteSequence DUP = new ArrayByteSequence("dup");
   private static ByteSequence KEY = new ArrayByteSequence("key");
@@ -112,11 +112,16 @@ public class Verify extends Configured implements Tool {
 
   @Override
   public int run(String[] args) throws Exception {
+    
+    if (args.length != 2) {
+      System.err.println("Usage : " + this.getClass().getSimpleName() + " <props file> <output dir>");
+      return 1;
+    }
+
     Job job = new Job(getConf(), this.getClass().getSimpleName() + "_" + System.currentTimeMillis());
     job.setJarByClass(this.getClass());
     
-    Properties accisumusProps = new Properties();
-    accisumusProps.load(new FileReader(args[0]));
+    AccismusProperties accisumusProps = new AccismusProperties(new File(args[0]));
     
     AccismusInputFormat.configure(job, accisumusProps);
     AccismusInputFormat.fetchFamilies(job, KEY, DUP);
@@ -140,7 +145,7 @@ public class Verify extends Configured implements Tool {
   }
   
   public static void main(String[] args) throws Exception {
-    int res = ToolRunner.run(new Configuration(), new Verify(), args);
+    int res = ToolRunner.run(new Configuration(), new Verifier(), args);
     if (res != 0)
       System.exit(res);
   }

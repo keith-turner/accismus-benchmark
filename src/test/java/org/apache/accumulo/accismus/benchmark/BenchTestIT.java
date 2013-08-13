@@ -26,14 +26,15 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.accumulo.accismus.api.AccismusProperties;
 import org.apache.accumulo.accismus.api.Column;
 import org.apache.accumulo.accismus.api.ColumnIterator;
-import org.apache.accumulo.accismus.api.LoaderTaskFactory;
+import org.apache.accumulo.accismus.api.LoaderExecutor;
 import org.apache.accumulo.accismus.api.Operations;
 import org.apache.accumulo.accismus.api.RowIterator;
 import org.apache.accumulo.accismus.api.ScannerConfiguration;
 import org.apache.accumulo.accismus.api.Transaction;
+import org.apache.accumulo.accismus.api.config.AccismusProperties;
+import org.apache.accumulo.accismus.api.config.LoaderExecutorProperties;
 import org.apache.accumulo.accismus.impl.ByteUtil;
 import org.apache.accumulo.accismus.impl.Configuration;
 import org.apache.accumulo.accismus.impl.Constants;
@@ -115,7 +116,9 @@ public class BenchTestIT {
     oserver = new OracleServer(config);
     oserver.start();
     
-    connectionProps = new AccismusProperties(instance.getZooKeepers(), 30000, zkn, instance.getInstanceName(), "root", secret);
+    connectionProps = new AccismusProperties().setZookeepers(instance.getZooKeepers()).setZookeeperRoot(zkn).setAccumuloInstance(instance.getInstanceName())
+        .setAccumuloUser("root").setAccumuloPassword(secret);
+
   }
   
   @After
@@ -133,7 +136,9 @@ public class BenchTestIT {
   @Test
   public void test1() throws Exception {
     
-    LoaderTaskFactory lwrapper = new LoaderTaskFactory(connectionProps);
+    LoaderExecutorProperties lep = new LoaderExecutorProperties(connectionProps);
+    lep.setNumThreads(0).setQueueSize(0);
+    LoaderExecutor lexecutor = new LoaderExecutor(lep);
 
     Map<ByteSequence,Document> expected = new HashMap<ByteSequence,Document>();
 
@@ -142,8 +147,7 @@ public class BenchTestIT {
     for (int i = 0; i < 10; i++) {
       Document doc = new Document(rand);
       expected.put(doc.getUrl(), doc);
-      lwrapper.newLoadTask(new DocumentLoader(doc)).run();
-      ;
+      lexecutor.execute(new DocumentLoader(doc));
     }
     
     runWorker();
@@ -158,7 +162,7 @@ public class BenchTestIT {
     r.nextBytes(newContent);
     Document newDoc = new Document(uri, new ArrayByteSequence(newContent));
     
-    lwrapper.newLoadTask(new DocumentLoader(newDoc)).run();
+    lexecutor.execute(new DocumentLoader(newDoc));
 
     expected.put(uri, newDoc);
 
@@ -179,7 +183,7 @@ public class BenchTestIT {
     connectionProps.store(fw, "");
     fw.close();
     
-    Verify.main(new String[] {"-D", "mapred.job.tracker=local", "-D", "fs.default.name=file:///", propsFile, outputDir});
+    Verifier.main(new String[] {"-D", "mapred.job.tracker=local", "-D", "fs.default.name=file:///", propsFile, outputDir});
   }
 
   /**
