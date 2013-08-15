@@ -84,14 +84,17 @@ public class BenchTestIT {
   protected AccismusProperties connectionProps;
 
   protected void runWorker() throws Exception, TableNotFoundException {
-    Worker worker = new Worker(config);
-    worker.processUpdates();
-    
-    // there should not be any notifcations
-    Scanner scanner = conn.createScanner(table, new Authorizations());
-    scanner.fetchColumnFamily(ByteUtil.toText(Constants.NOTIFY_CF));
-    
-    Assert.assertFalse(scanner.iterator().hasNext());
+    while (true) {
+      Worker worker = new Worker(config);
+      worker.processUpdates();
+      
+      // there should not be any notifcations
+      Scanner scanner = conn.createScanner(table, new Authorizations());
+      scanner.fetchColumnFamily(ByteUtil.toText(Constants.NOTIFY_CF));
+      
+      if (!scanner.iterator().hasNext())
+        break;
+    }
   }
   
   @BeforeClass
