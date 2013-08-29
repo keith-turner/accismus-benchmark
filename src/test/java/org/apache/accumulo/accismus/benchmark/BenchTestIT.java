@@ -39,6 +39,7 @@ import org.apache.accumulo.accismus.impl.ByteUtil;
 import org.apache.accumulo.accismus.impl.Configuration;
 import org.apache.accumulo.accismus.impl.Constants;
 import org.apache.accumulo.accismus.impl.OracleServer;
+import org.apache.accumulo.accismus.impl.RandomTabletChooser;
 import org.apache.accumulo.accismus.impl.TransactionImpl;
 import org.apache.accumulo.accismus.impl.Worker;
 import org.apache.accumulo.core.client.Connector;
@@ -85,7 +86,7 @@ public class BenchTestIT {
 
   protected void runWorker() throws Exception, TableNotFoundException {
     while (true) {
-      Worker worker = new Worker(config);
+      Worker worker = new Worker(config, new RandomTabletChooser(config));
       worker.processUpdates();
       
       // there should not be any notifcations
