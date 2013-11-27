@@ -26,30 +26,23 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.accumulo.accismus.api.Admin;
 import org.apache.accumulo.accismus.api.Column;
 import org.apache.accumulo.accismus.api.ColumnIterator;
 import org.apache.accumulo.accismus.api.LoaderExecutor;
-import org.apache.accumulo.accismus.api.Operations;
 import org.apache.accumulo.accismus.api.RowIterator;
 import org.apache.accumulo.accismus.api.ScannerConfiguration;
-import org.apache.accumulo.accismus.api.Transaction;
+import org.apache.accumulo.accismus.api.Snapshot;
+import org.apache.accumulo.accismus.api.SnapshotFactory;
 import org.apache.accumulo.accismus.api.config.AccismusProperties;
+import org.apache.accumulo.accismus.api.config.InitializationProperties;
 import org.apache.accumulo.accismus.api.config.LoaderExecutorProperties;
-import org.apache.accumulo.accismus.impl.ByteUtil;
-import org.apache.accumulo.accismus.impl.Configuration;
-import org.apache.accumulo.accismus.impl.Constants;
-import org.apache.accumulo.accismus.impl.OracleServer;
-import org.apache.accumulo.accismus.impl.RandomTabletChooser;
-import org.apache.accumulo.accismus.impl.TransactionImpl;
-import org.apache.accumulo.accismus.impl.Worker;
+import org.apache.accumulo.accismus.api.test.MiniAccismus;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Instance;
-import org.apache.accumulo.core.client.Scanner;
-import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.data.ArrayByteSequence;
 import org.apache.accumulo.core.data.ByteSequence;
-import org.apache.accumulo.core.security.Authorizations;
 import org.apache.accumulo.minicluster.MiniAccumuloInstance;
 import org.apache.commons.io.FileUtils;
 import org.apache.zookeeper.ZooKeeper;
@@ -76,28 +69,14 @@ public class BenchTestIT {
   
   private static Instance instance;
   
-  protected Configuration config;
   protected Connector conn;
   protected String table;
-  protected OracleServer oserver;
   protected String zkn;
   
   protected AccismusProperties connectionProps;
 
-  protected void runWorker() throws Exception, TableNotFoundException {
-    while (true) {
-      Worker worker = new Worker(config, new RandomTabletChooser(config));
-      worker.processUpdates();
-      
-      // there should not be any notifcations
-      Scanner scanner = conn.createScanner(table, new Authorizations());
-      scanner.fetchColumnFamily(ByteUtil.toText(Constants.NOTIFY_CF));
-      
-      if (!scanner.iterator().hasNext())
-        break;
-    }
-  }
-  
+  private MiniAccismus miniAccismus;
+
   @BeforeClass
   public static void setUp() throws Exception {
     String instanceName = "plugin-it-instance";
@@ -113,22 +92,21 @@ public class BenchTestIT {
     table = "table" + next.getAndIncrement();
     zkn = "/test" + next.getAndIncrement();
     
-    Operations.initialize(conn, zkn, table, getObservers());
+    connectionProps = new InitializationProperties().setAccumuloTable(table).setObservers(getObservers()).setNumThreads(1)
+        .setZookeepers(instance.getZooKeepers()).setZookeeperRoot(zkn).setAccumuloInstance(instance.getInstanceName()).setAccumuloUser("root")
+        .setAccumuloPassword(secret);
 
-    config = new Configuration(zk, zkn, conn);
-    
-    oserver = new OracleServer(config);
-    oserver.start();
-    
-    connectionProps = new AccismusProperties().setZookeepers(instance.getZooKeepers()).setZookeeperRoot(zkn).setAccumuloInstance(instance.getInstanceName())
-        .setAccumuloUser("root").setAccumuloPassword(secret);
+    Admin.initialize(connectionProps);
+
+    miniAccismus = new MiniAccismus(connectionProps);
+    miniAccismus.start();
 
   }
   
   @After
   public void tearDown() throws Exception {
+    miniAccismus.stop();
     conn.tableOperations().delete(table);
-    oserver.stop();
   }
   
   protected Map<Column,String> getObservers() {
@@ -154,7 +132,7 @@ public class BenchTestIT {
       lexecutor.execute(new DocumentLoader(doc));
     }
     
-    runWorker();
+    miniAccismus.waitForObservers();
 
     verify(expected);
     verifyMR();
@@ -170,11 +148,11 @@ public class BenchTestIT {
 
     expected.put(uri, newDoc);
 
-    runWorker();
+    miniAccismus.waitForObservers();
     
     verify(expected);
     
-    runWorker();
+    miniAccismus.waitForObservers();
   }
 
   private void verifyMR() throws Exception {
@@ -195,7 +173,7 @@ public class BenchTestIT {
    * 
    */
   private void verify(Map<ByteSequence,Document> expected) throws Exception {
-    Transaction tx1 = new TransactionImpl(config);
+    Snapshot tx1 = new SnapshotFactory(connectionProps).createSnapshot();
     
     RowIterator riter = tx1.get(new ScannerConfiguration());
     
