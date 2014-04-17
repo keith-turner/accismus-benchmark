@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.accumulo.accismus.benchmark;
+package accismus.benchmark;
 
-import org.apache.accumulo.accismus.api.Loader;
-import org.apache.accumulo.accismus.api.Transaction;
+import accismus.api.Loader;
+import accismus.api.Transaction;
 
 /**
  * 

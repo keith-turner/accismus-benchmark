@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.accumulo.accismus.benchmark;
+package accismus.benchmark;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -22,9 +22,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.accumulo.accismus.api.Column;
-import org.apache.accumulo.accismus.api.Transaction;
-import org.apache.accumulo.accismus.api.Observer;
+import accismus.api.Column;
+import accismus.api.Transaction;
+import accismus.api.Observer;
 import org.apache.accumulo.core.data.ArrayByteSequence;
 import org.apache.accumulo.core.data.ByteSequence;
 

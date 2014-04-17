@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.accumulo.accismus.benchmark;
+package accismus.benchmark;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -26,18 +26,24 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.accumulo.accismus.api.Admin;
-import org.apache.accumulo.accismus.api.Column;
-import org.apache.accumulo.accismus.api.ColumnIterator;
-import org.apache.accumulo.accismus.api.LoaderExecutor;
-import org.apache.accumulo.accismus.api.RowIterator;
-import org.apache.accumulo.accismus.api.ScannerConfiguration;
-import org.apache.accumulo.accismus.api.Snapshot;
-import org.apache.accumulo.accismus.api.SnapshotFactory;
-import org.apache.accumulo.accismus.api.config.AccismusProperties;
-import org.apache.accumulo.accismus.api.config.InitializationProperties;
-import org.apache.accumulo.accismus.api.config.LoaderExecutorProperties;
-import org.apache.accumulo.accismus.api.test.MiniAccismus;
+import accismus.api.Admin;
+import accismus.api.Column;
+import accismus.api.ColumnIterator;
+import accismus.api.LoaderExecutor;
+import accismus.api.RowIterator;
+import accismus.api.ScannerConfiguration;
+import accismus.api.Snapshot;
+import accismus.api.SnapshotFactory;
+import accismus.api.config.AccismusProperties;
+import accismus.api.config.InitializationProperties;
+import accismus.api.config.LoaderExecutorProperties;
+import accismus.api.test.MiniAccismus;
+import accismus.benchmark.ClusterIndexer;
+import accismus.benchmark.Document;
+import accismus.benchmark.DocumentLoader;
+import accismus.benchmark.Generator;
+import accismus.benchmark.Verifier;
+
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;

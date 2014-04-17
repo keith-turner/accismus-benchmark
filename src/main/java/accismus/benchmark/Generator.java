@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.accumulo.accismus.benchmark;
+package accismus.benchmark;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -25,9 +25,9 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Random;
 
-import org.apache.accumulo.accismus.api.Column;
-import org.apache.accumulo.accismus.api.Loader;
-import org.apache.accumulo.accismus.api.mapreduce.AccismusOutputFormat;
+import accismus.api.Column;
+import accismus.api.Loader;
+import accismus.api.mapreduce.AccismusOutputFormat;
 import org.apache.accumulo.core.data.ByteSequence;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.io.NullWritable;
